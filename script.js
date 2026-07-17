@@ -1,26 +1,143 @@
-// ===============================
-// Select Elements
-// ===============================
+// =======================================
+// SELECT ELEMENTS
+// =======================================
 
 const taskInput = document.getElementById("taskInput");
 const addTaskBtn = document.getElementById("addTaskBtn");
 const taskList = document.getElementById("taskList");
 
-// ===============================
-// Local Storage
-// ===============================
+const searchInput = document.getElementById("searchInput");
+
+const clearAllBtn = document.getElementById("clearAllBtn");
+
+const totalTasks = document.getElementById("totalTasks");
+const completedTasks = document.getElementById("completedTasks");
+const pendingTasks = document.getElementById("pendingTasks");
+
+const filterButtons = document.querySelectorAll(".filter");
+
+// =======================================
+// TASK ARRAY
+// =======================================
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-// ===============================
-// Display Tasks
-// ===============================
+let currentFilter = "all";
+
+// =======================================
+// ADD TASK
+// =======================================
+
+function addTask() {
+
+    const taskText = taskInput.value.trim();
+
+    if (taskText === "") {
+
+        alert("Please enter a task!");
+
+        return;
+
+    }
+
+    const task = {
+
+        id: Date.now(),
+
+        text: taskText,
+
+        completed: false
+
+    };
+
+    tasks.push(task);
+
+    taskInput.value = "";
+
+    saveTasks();
+
+}
+
+// =======================================
+// SAVE TASKS
+// =======================================
+
+function saveTasks() {
+
+    localStorage.setItem(
+
+        "tasks",
+
+        JSON.stringify(tasks)
+
+    );
+
+    renderTasks();
+
+    updateStats();
+
+}
+
+// =======================================
+// EVENTS
+// =======================================
+
+addTaskBtn.addEventListener(
+
+    "click",
+
+    addTask
+
+);
+
+taskInput.addEventListener(
+
+    "keypress",
+
+    function(e){
+
+        if(e.key==="Enter"){
+
+            addTask();
+
+        }
+
+    }
+
+);
+
+// =======================================
+// RENDER TASKS
+// =======================================
 
 function renderTasks() {
 
     taskList.innerHTML = "";
 
-    tasks.forEach((task, index) => {
+    // Empty State
+    if (tasks.length === 0) {
+
+        taskList.innerHTML = `
+            <div class="empty-message">
+                🎉 No tasks yet! Add one above.
+            </div>
+        `;
+
+        return;
+    }
+
+    tasks.forEach((task) => {
+
+        // Filter
+        if (currentFilter === "completed" && !task.completed) return;
+        if (currentFilter === "pending" && task.completed) return;
+
+        // Search
+        if (
+            !task.text
+                .toLowerCase()
+                .includes(searchInput.value.toLowerCase())
+        ) return;
 
         const li = document.createElement("li");
         li.className = "task";
@@ -29,65 +146,39 @@ function renderTasks() {
             li.classList.add("completed");
         }
 
-        const span = document.createElement("span");
-        span.textContent = task.text;
+        li.innerHTML = `
 
-        const buttonContainer = document.createElement("div");
-        buttonContainer.className = "task-buttons";
+            <span>${task.text}</span>
 
-        // Complete Button
-        const completeBtn = document.createElement("button");
-        completeBtn.textContent = "✔";
-        completeBtn.className = "edit-btn";
+            <div class="task-buttons">
 
-        completeBtn.addEventListener("click", () => {
-            tasks[index].completed = !tasks[index].completed;
-            saveTasks();
-        });
+                <button
+                    class="complete-btn"
+                    onclick="toggleTask(${task.id})">
 
-        // Edit Button
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "✏";
-        editBtn.className = "edit-btn";
+                    ✔
 
-        editBtn.addEventListener("click", () => {
+                </button>
 
-            const updatedTask = prompt(
-                "Edit your task:",
-                task.text
-            );
+                <button
+                    class="edit-btn"
+                    onclick="editTask(${task.id})">
 
-            if (
-                updatedTask !== null &&
-                updatedTask.trim() !== ""
-            ) {
+                    ✏
 
-                tasks[index].text = updatedTask.trim();
-                saveTasks();
+                </button>
 
-            }
+                <button
+                    class="delete-btn"
+                    onclick="deleteTask(${task.id})">
 
-        });
+                    🗑
 
-        // Delete Button
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "🗑";
-        deleteBtn.className = "delete-btn";
+                </button>
 
-        deleteBtn.addEventListener("click", () => {
+            </div>
 
-            tasks.splice(index, 1);
-
-            saveTasks();
-
-        });
-
-        buttonContainer.appendChild(completeBtn);
-        buttonContainer.appendChild(editBtn);
-        buttonContainer.appendChild(deleteBtn);
-
-        li.appendChild(span);
-        li.appendChild(buttonContainer);
+        `;
 
         taskList.appendChild(li);
 
@@ -95,61 +186,161 @@ function renderTasks() {
 
 }
 
-// ===============================
-// Add Task
-// ===============================
+// =======================================
+// COMPLETE TASK
+// =======================================
 
-function addTask() {
+function toggleTask(id) {
 
-    const taskText = taskInput.value.trim();
+    tasks = tasks.map(task => {
 
-    if (taskText === "") {
-        alert("Please enter a task.");
-        return;
-    }
+        if (task.id === id) {
 
-    tasks.push({
-        text: taskText,
-        completed: false
+            task.completed = !task.completed;
+
+        }
+
+        return task;
+
     });
-
-    taskInput.value = "";
 
     saveTasks();
 
 }
 
-// ===============================
-// Save Tasks
-// ===============================
+// =======================================
+// DELETE TASK
+// =======================================
 
-function saveTasks() {
+function deleteTask(id) {
 
-    localStorage.setItem(
-        "tasks",
-        JSON.stringify(tasks)
-    );
+    tasks = tasks.filter(task => task.id !== id);
 
-    renderTasks();
+    saveTasks();
 
 }
 
-// ===============================
-// Events
-// ===============================
+// =======================================
+// EDIT TASK
+// =======================================
 
-addTaskBtn.addEventListener("click", addTask);
+function editTask(id) {
 
-taskInput.addEventListener("keypress", (e) => {
+    const task = tasks.find(task => task.id === id);
 
-    if (e.key === "Enter") {
-        addTask();
+    const updatedText = prompt(
+
+        "Edit your task:",
+
+        task.text
+
+    );
+
+    if (
+
+        updatedText !== null &&
+
+        updatedText.trim() !== ""
+
+    ) {
+
+        task.text = updatedText.trim();
+
+        saveTasks();
+
+    }
+
+}
+
+// =======================================
+// UPDATE STATISTICS
+// =======================================
+
+function updateStats() {
+
+    const completed = tasks.filter(task => task.completed).length;
+
+    const pending = tasks.length - completed;
+
+    totalTasks.textContent = `Total: ${tasks.length}`;
+
+    completedTasks.textContent = `Completed: ${completed}`;
+
+    pendingTasks.textContent = `Pending: ${pending}`;
+
+}
+
+// =======================================
+// LIVE SEARCH
+// =======================================
+
+searchInput.addEventListener("input", function () {
+
+    renderTasks();
+
+});
+
+// =======================================
+// FILTER BUTTONS
+// =======================================
+
+filterButtons.forEach(button => {
+
+    button.addEventListener("click", function () {
+
+        // Remove active class
+        filterButtons.forEach(btn => {
+
+            btn.classList.remove("active");
+
+        });
+
+        // Add active class
+        this.classList.add("active");
+
+        // Get filter value
+        currentFilter = this.dataset.filter;
+
+        renderTasks();
+
+    });
+
+});
+
+// =======================================
+// CLEAR ALL TASKS
+// =======================================
+
+clearAllBtn.addEventListener("click", function () {
+
+    if (tasks.length === 0) {
+
+        alert("No tasks to delete!");
+
+        return;
+
+    }
+
+    const confirmDelete = confirm(
+
+        "Are you sure you want to delete all tasks?"
+
+    );
+
+    if (confirmDelete) {
+
+        tasks = [];
+
+        saveTasks();
+
     }
 
 });
 
-// ===============================
-// Initial Load
-// ===============================
+// =======================================
+// INITIALIZE APP
+// =======================================
 
 renderTasks();
+
+updateStats();

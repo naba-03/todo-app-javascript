@@ -7,77 +7,149 @@ const addTaskBtn = document.getElementById("addTaskBtn");
 const taskList = document.getElementById("taskList");
 
 // ===============================
-// Add Task
+// Local Storage
 // ===============================
 
-addTaskBtn.addEventListener("click", addTask);
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-// Add task when Enter key is pressed
-taskInput.addEventListener("keypress", function (event) {
-    if (event.key === "Enter") {
-        addTask();
-    }
-});
+// ===============================
+// Display Tasks
+// ===============================
+
+function renderTasks() {
+
+    taskList.innerHTML = "";
+
+    tasks.forEach((task, index) => {
+
+        const li = document.createElement("li");
+        li.className = "task";
+
+        if (task.completed) {
+            li.classList.add("completed");
+        }
+
+        const span = document.createElement("span");
+        span.textContent = task.text;
+
+        const buttonContainer = document.createElement("div");
+        buttonContainer.className = "task-buttons";
+
+        // Complete Button
+        const completeBtn = document.createElement("button");
+        completeBtn.textContent = "✔";
+        completeBtn.className = "edit-btn";
+
+        completeBtn.addEventListener("click", () => {
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks();
+        });
+
+        // Edit Button
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "✏";
+        editBtn.className = "edit-btn";
+
+        editBtn.addEventListener("click", () => {
+
+            const updatedTask = prompt(
+                "Edit your task:",
+                task.text
+            );
+
+            if (
+                updatedTask !== null &&
+                updatedTask.trim() !== ""
+            ) {
+
+                tasks[index].text = updatedTask.trim();
+                saveTasks();
+
+            }
+
+        });
+
+        // Delete Button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "🗑";
+        deleteBtn.className = "delete-btn";
+
+        deleteBtn.addEventListener("click", () => {
+
+            tasks.splice(index, 1);
+
+            saveTasks();
+
+        });
+
+        buttonContainer.appendChild(completeBtn);
+        buttonContainer.appendChild(editBtn);
+        buttonContainer.appendChild(deleteBtn);
+
+        li.appendChild(span);
+        li.appendChild(buttonContainer);
+
+        taskList.appendChild(li);
+
+    });
+
+}
+
+// ===============================
+// Add Task
+// ===============================
 
 function addTask() {
 
     const taskText = taskInput.value.trim();
 
-    // Don't allow empty tasks
     if (taskText === "") {
         alert("Please enter a task.");
         return;
     }
 
-    // Create <li>
-    const li = document.createElement("li");
-    li.className = "task";
+    tasks.push({
+        text: taskText,
+        completed: false
+    });
 
-    // Task text
-    const span = document.createElement("span");
-    span.textContent = taskText;
-
-    // Button container
-    const buttonContainer = document.createElement("div");
-    buttonContainer.className = "task-buttons";
-
-    // Complete Button
-    const completeBtn = document.createElement("button");
-    completeBtn.textContent = "✔";
-    completeBtn.className = "edit-btn";
-
-    // Delete Button
-    const deleteBtn = document.createElement("button");
-    deleteBtn.textContent = "🗑";
-    deleteBtn.className = "delete-btn";
-
-    // Append buttons
-    buttonContainer.appendChild(completeBtn);
-    buttonContainer.appendChild(deleteBtn);
-
-    // Append to task
-    li.appendChild(span);
-    li.appendChild(buttonContainer);
-
-    taskList.appendChild(li);
-
-    // Clear input
     taskInput.value = "";
 
-    // ===============================
-    // Complete Task
-    // ===============================
-
-    completeBtn.addEventListener("click", function () {
-        li.classList.toggle("completed");
-    });
-
-    // ===============================
-    // Delete Task
-    // ===============================
-
-    deleteBtn.addEventListener("click", function () {
-        li.remove();
-    });
+    saveTasks();
 
 }
+
+// ===============================
+// Save Tasks
+// ===============================
+
+function saveTasks() {
+
+    localStorage.setItem(
+        "tasks",
+        JSON.stringify(tasks)
+    );
+
+    renderTasks();
+
+}
+
+// ===============================
+// Events
+// ===============================
+
+addTaskBtn.addEventListener("click", addTask);
+
+taskInput.addEventListener("keypress", (e) => {
+
+    if (e.key === "Enter") {
+        addTask();
+    }
+
+});
+
+// ===============================
+// Initial Load
+// ===============================
+
+renderTasks();
